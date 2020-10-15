@@ -1,10 +1,17 @@
-const cacheName = 'veille-techno' + '1.2';
+const cacheName = 'veille-techno' + '1.3';
+
+	
+// 9.6 Synchroniser les données au retour de la connexion
+// Ajout des imports pour les appels méthodes hors connexion
+self.importScripts('idb/idb.js', 'idb/database.js');
 
 self.addEventListener('install', (evt) => {
     console.log(`sw installé à ${new Date().toLocaleTimeString()}`);
 
     const cachePromise = caches.open(cacheName).then(cache => {
         return cache.addAll([
+            'idb/idb.js',
+            'idb/databases.js',
             'index.html',
             'main.js',
             'style.css',
@@ -12,7 +19,7 @@ self.addEventListener('install', (evt) => {
             'add_techno.html',
             'add_techno.js',
             'contact.html',
-            'contact.js',
+            'contact.js'
         ])
         .then(console.log('cache initialisé'))
         .catch(console.err);
@@ -143,6 +150,18 @@ self.registration.showNotification("Notification du SW", {
 //     evt.notification.close();
 // })
 
+	
+// 9.6 Synchroniser les données au retour de la connexion
+self.addEventListener('sync', event => {
+    console.log('sync event', event);
+    // test du tag de synchronisation utilisé dans add_techno
+    if (event.tag === 'sync-technos') {
+        console.log('syncing', event.tag);
+        // Utilisation de waitUntil pour s'assurer que le code est exécuté (Attend une promise)
+        event.waitUntil(updateTechnoPromise);
+    }
+})
+
 // 8.1 Intercepter une notification push
 self.addEventListener("push", evt => {
     console.log("push event", evt);
@@ -156,3 +175,38 @@ self.addEventListener("push", evt => {
     };
     self.registration.showNotification(title, objNotification);
 })
+
+	
+// 9.6 Synchroniser les données au retour de la connexion
+// constante de la Promise permettant de faire la synchronisation
+const updateTechnoPromise = new Promise(function(resolve, reject) {
+ 
+    // récupération de la liste des technos de indexedDB
+    getAllTechnos().then(technos => {
+        console.log('got technos from sync callback', technos);
+        
+        // pour chaque item : appel de l'api pour l'ajouter à la base
+        technos.map(techno => {
+            console.log('Attempting fetch', techno);
+            fetch('https://us-central1-pwa-technos-8658f.cloudfunctions.net/addTechno', {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method: 'POST',
+                body: JSON.stringify(techno)
+            })
+            .then(() => {
+                // Succès : suppression de l'item en local si ajouté en distant
+                console.log('Success update et id supprimée', techno.id);
+                return deleteTechno(techno.id);
+            })
+            .catch(err => {
+                // Erreur
+                console.log('Error update et id supprimée', err);
+                resolve(err);
+            })
+        })
+ 
+    })
+});
