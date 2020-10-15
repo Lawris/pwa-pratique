@@ -6,13 +6,16 @@ const addTechnoForm = document.querySelector('#add-techno-form');
 addTechnoForm.addEventListener('submit', evt => {
     evt.preventDefault();
     
+    //9.3 Branchement de notre Bdd Firebase
     const payload = {
+        id: Date.now(), // On ajoute l'id pour notre FASS
         name: technonameField.value,
         description: technoDescriptionField.value,
         url: technoUrlField.value
     }
 
-    fetch('http://localhost:3001/technos', { 
+
+    fetch('https://us-central1-pwa-technos-8658f.cloudfunctions.net/addTechno', { 
             method: 'POST', 
             headers: {
                 'Content-Type': 'application/json'
@@ -24,3 +27,4 @@ addTechnoForm.addEventListener('submit', evt => {
         })
         .catch(err =>console.error);
 })
+

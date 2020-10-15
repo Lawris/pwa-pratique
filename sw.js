@@ -47,6 +47,10 @@ self.addEventListener('fetch', (evt) => {
 //..
 self.addEventListener('fetch', (evt) => {
 
+    	
+    if(evt.request.method === 'POST') {
+        return;
+    }
     // 5.3 Stratégie de network first with cache fallback
     // On doit envoyer une réponse
     evt.respondWith(
